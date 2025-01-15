@@ -12,6 +12,7 @@ fps = 60 #Sets an fps limit
 font = pg.font.Font('freesansbold.ttf',20)
 pg.display.set_caption("Pacman")
 level = boards #Used if there are more levels with different boards (maps)
+color = 'blue' #Color of walls
 
 def draw_board(level):
     num1 = ((HEIGHT-50)//32) #Determines the height of each tile if 32 are on the horizontal line
@@ -19,9 +20,13 @@ def draw_board(level):
     for i in range(len(level)): #For each map that is assigned to a level
         for j in range(len(level[i])): #For each "tile" on map i (level i)
             if level[i][j] == 1: #Normal dot
-                pg.draw.circle(screen, 'white',(j*num2 + (0.5*num2), i*num1 + (0.5*num1)),4)
+                pg.draw.circle(screen, 'white',(j * num2 + (0.5 * num2), i * num1 + (0.5 * num1)),4) #Finds the center of the tile
             if level[i][j] == 2: #Bigger dot (Power up)
-                pg.draw.circle(screen, 'white',(j*num2 + (0.5*num2), i*num1 + (0.5*num1)),10)
+                pg.draw.circle(screen, 'white',(j * num2 + (0.5 * num2), i * num1 + (0.5 * num1)),10)
+            if level[i][j] == 3: #Vertical wall
+                pg.draw.line(screen, color, (j * num2 + (0.5 * num2), i * num1), (j * num2 + (0.5 * num2), i * num1 + num1), 3)
+            if level[i][j] == 4: #Horizontal wall
+                pg.draw.line(screen, color, (j * num2, i * num1 + (0.5 * num1)), (j * num2 + num2, i * num1 + (0.5*num1)), 3)
 
 
 #Gameloop
