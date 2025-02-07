@@ -1,7 +1,6 @@
 ##Pacman
 import pygame as pg
 from board import boards
-import random
 import math
 
 PI = math.pi
@@ -56,7 +55,6 @@ player_y = 660
 direction = 0
 counter = 0
 
-
 def draw_player():
     #Right = 0, Left = 1, Up = 2, Down = 3
     if direction == 0:
@@ -70,10 +68,10 @@ def draw_player():
 
 """
 def check_pos(x,y):
-    turns = [False, False, False, False]
+    turns = [False, False, False, False] #Left, right, up, down
     num1 = ((HEIGHT-50)//32) #Determines the height of each tile if 32 are on the horizontal line
     num2 = (WIDTH//30) #Determines the width of each tile with 30 on the vertical line. // ensures integer is returned.
-    num3 = 15
+    num3 = 15 
     #Check collisions behind center of player (x,y) and the buffer of 15 pixels to compensate for the player's size and the empty space between walls and the tile's edge
     if center_x // 30 < 29:
         if direction == 0:
@@ -103,14 +101,14 @@ def draw_ghosts():
         img = pg.image.load(f"assets/ghost_images/{i}.png")
         ghosts.append(img)
 
-move_queue = []
+move_queue = ['start']
 #If keypress in direction x is possible, clear the queue and append the move to the queue. While the queue is not empty, move the player in the direction of the queue.
 #If the direction is not possible, append the move to the queue and wait until the player can move in that direction.
 
 #Gameloop
 run = True
-num1 = ((HEIGHT-50)//32) #Determines the height of each tile if 32 are on the horizontal line
-num2 = (WIDTH//30) #Determines the width of each tile with 30 on the vertical line
+num1 = ((HEIGHT-50)//32)
+num2 = (WIDTH//30)
 while run:
     timer.tick(fps)
     if counter < 19: #Can't exceed 19 since there are only 4 images (index 0-3). 20 would return index 4 which doesn't exist.
@@ -123,11 +121,9 @@ while run:
     screen.fill('black')
     draw_board(level)
     draw_player()
-    center_x = player_x + 22.5
-    center_y = player_y + 22.5
-    
-    #check_pos(center_x, center_y)
-    #valid_turns = check_pos
+    center_x = int(player_x + 22.5)
+    center_y = int(player_y + 22.5)
+    #valid_turns = check_pos(center_x, center_y)
 
     for event in pg.event.get():
         if event.type == pg.QUIT:
@@ -136,31 +132,35 @@ while run:
             if event.key == pg.K_ESCAPE:
                 run = False
             elif event.key == pg.K_RIGHT:
-                direction = 0
-                player_x += num2+(num2//2)
+                #if valid_turns[0]:
+                move_queue.append('right')
+                move_queue.pop(0)
+                #else move_queue.append('right')
             elif event.key == pg.K_LEFT:
-                direction = 1
-                player_x -= num2+(num2//2)
+                move_queue.append('left')
+                move_queue.pop(0)
             elif event.key == pg.K_UP:
-                direction = 2
-                player_y -= num1
+                move_queue.append('up')
+                move_queue.pop(0)
             elif event.key == pg.K_DOWN:
-                direction = 3
-                player_y += num1    
-    """
-    if move_queue[0] == 'right':
-        player_x += num2+(num2//2)
+                move_queue.append('down')
+                move_queue.pop(0)
+
+    if move_queue[0] == 'start':
+        pass
+    elif move_queue[0] == 'right': #and is not blocked by wall: #(god pseudokode)
+        player_x += 1.5
         direction = 0
-    elif move_queue[0] == 'left':
-        player_x -= num2+(num2//2)
+    elif move_queue[0] == 'left': #and is not blocked by wall:
+        player_x -= 1.5
         direction = 1
-    elif move_queue[0] == 'up':
-        player_y -= num1
+    elif move_queue[0] == 'up': #and is not blocked by wall:
+        player_y -= 1.5
         direction = 2
-    elif move_queue[0] == 'down':
-        player_y += num1
+    elif move_queue[0] == 'down': #and is not blocked by wall:
+        player_y += 1.5
         direction = 3
-    """
+    
         
     pg.display.flip()
 pg.quit()
