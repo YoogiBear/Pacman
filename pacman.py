@@ -15,7 +15,6 @@ fps = 60 #Sets an fps limit
 font = pg.font.Font('freesansbold.ttf',20)
 pg.display.set_caption("Pacman")
 level = boards #Used if there are more levels with different boards (maps)
-colors =  ['red', 'blue', 'green', 'yellow','orange','purple','pink','white']
 color = 'blue' #Color of walls
 flicker = False #Used to flicker the power up dots
 valid_turns = [False, False, False, False] #Used to determine if a turn is valid (right, left, up, down)
@@ -66,34 +65,58 @@ def draw_player():
     elif direction == 3:
         screen.blit(pg.transform.rotate(player_images[counter // 5], -90), (player_x, player_y))
 
-"""
-def check_pos(x,y):
+
+def check_pos(center_x,center_y):
     turns = [False, False, False, False] #Left, right, up, down
     num1 = ((HEIGHT-50)//32) #Determines the height of each tile if 32 are on the horizontal line
     num2 = (WIDTH//30) #Determines the width of each tile with 30 on the vertical line. // ensures integer is returned.
     num3 = 15 
+
     #Check collisions behind center of player (x,y) and the buffer of 15 pixels to compensate for the player's size and the empty space between walls and the tile's edge
     if center_x // 30 < 29:
         if direction == 0:
-            if level[center_y // num1][center_x-num3 // num2] < 3: #Checks if 0, 1 or 2 is behind player when direction is right (empty, dot, power up)
+            if level[center_y // num1][(center_x-num3) // num2] < 3: #Checks if 0, 1 or 2 is behind player when direction is right (empty, dot, power up)
                 turns[1] = True
         if direction == 1:
-             if level[center_y // num1][center_x+num3 // num2] < 3:
+            if level[center_y // num1][(center_x+num3) // num2] < 3:
                 turns[0] = True
 
         if direction == 2:
-            if level[center_y-num3 // num1][center_x // num2] < 3:
+            if level[(center_y-num3) // num1][center_x // num2] < 3:
                 turns[3] = True
 
         if direction == 3:
-            if level[center_y+num3// num1][center_x // num2] < 3:
+            if level[(center_y+num3)// num1][center_x // num2] < 3:
                 turns[2] = True
 
+        if direction == 2 or direction == 3:
+            if 12 <= center_x % num2 <= 18: #Determines if the center of the player is in the middle of a tile
+                if level[(center_y+num3)// num1][center_x // num2 + num3] < 3: #Determines if the tile below is 0,1 or 2.
+                    turns[3] = True
+                if level[(center_y-num3)// num1][center_x // num2 + num3] < 3: #Determines if the tile above is 0,1 or 2.
+                    turns[2] = True
+            if 12 <= center_y % num1 <= 18:
+                if level[center_y // num1][(center_x-num2) // num2] < 3: #Checks left side
+                    turns[0] = True
+                if level[center_y // num1][(center_x+num2) // num2] < 3: #Checks right side ##Check if num2 can be replaced by num3 and num1 in up/down checks
+                    turns[1] = True
+
+        if direction == 0 or direction == 1:
+            if 12 <= center_x % num2 <= 18:
+                if level[center_y // num1][(center_x-num3) // num2] < 3: #Checks left side
+                    turns[0] = True
+                if level[center_y // num1][(center_x+num3) // num2] < 3: #Checks right side
+                    turns[1] = True
+            if 12 <= center_y % num1 <= 18:
+                if level[(center_y-num1) // num1][center_x // num2] < 3: #Checks up
+                    turns[2] = True
+                if level[(center_y+num1) // num1][center_x // num2] < 3: #Checks down
+                    turns[3] = True
     else:
         turns[0] = True
         turns[1] = True
     return turns
-"""
+
 
 ghosts = []
 def draw_ghosts():
@@ -114,6 +137,7 @@ while run:
     if counter < 19: #Can't exceed 19 since there are only 4 images (index 0-3). 20 would return index 4 which doesn't exist.
         counter += 1
         if counter > 15:
+            pass
             flicker = False
     else:
         counter = 0
@@ -123,7 +147,8 @@ while run:
     draw_player()
     center_x = int(player_x + 22.5)
     center_y = int(player_y + 22.5)
-    #valid_turns = check_pos(center_x, center_y)
+    # TEST # print(f"Center x: {center_x} and center y: {center_y}")
+    valid_turns = check_pos(center_x, center_y)
 
     for event in pg.event.get():
         if event.type == pg.QUIT:
