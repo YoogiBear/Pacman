@@ -17,14 +17,14 @@ pg.display.set_caption("Pacman")
 level = boards #Used if there are more levels with different boards (maps)
 color = 'blue' #Color of walls
 flicker = False #Used to flicker the power up dots
-valid_turns = [False, False, False, False] #(right, left, up, down)
-temp = []
-move_queue = []
+valid_turns = [False, False, False, False] #right, left, up, down
+temp = 0
 direction = 0
 PI = math.pi
 player_x = 425
 player_y = 660
 counter = 0
+speed = 2
 
 def draw_board(level):
     num1 = ((HEIGHT-50)//32) #Determines the height of each tile if 32 are on the horizontal line
@@ -68,7 +68,7 @@ def draw_player():
         screen.blit(pg.transform.rotate(player_images[counter // 5], -90), (player_x, player_y))
 
 def check_pos(center_x,center_y):
-    turns = [False, False, False, False] #Left, right, up, down
+    turns = [False, False, False, False] #right, left, up, down
     num1 = (HEIGHT-50)//32 #Determines the height of each tile if 32 are on the horizontal line
     num2 = (WIDTH//30) #Determines the width of each tile with 30 on the vertical line. // ensures integer is returned.
     num3 = 15 #used to check a little ahead instead of a whole tile which can cause Pacman to stop too early
@@ -84,11 +84,11 @@ def check_pos(center_x,center_y):
                 turns[0] = True
 
         if direction == 2:
-            if level[(center_y-num3) // num1][center_x // num2] < 3:
+            if level[(center_y+num3) // num1][center_x // num2] < 3:
                 turns[3] = True
 
         if direction == 3:
-            if level[(center_y+num3)// num1][center_x // num2] < 3:
+            if level[(center_y-num3)// num1][center_x // num2] < 3:
                 turns[2] = True
 
     #Check if it is possible to continue in the same direction and/or turn at any given position
@@ -100,9 +100,9 @@ def check_pos(center_x,center_y):
                     turns[2] = True
             if 12 <= center_y % num1 <= 18:
                 if level[center_y // num1][(center_x-num2) // num2] < 3: #Checks left side
-                    turns[0] = True
-                if level[center_y // num1][(center_x+num2) // num2] < 3: #Checks right side
                     turns[1] = True
+                if level[center_y // num1][(center_x+num2) // num2] < 3: #Checks right side
+                    turns[0] = True
 
         if direction == 0 or direction == 1:
             if 12 <= center_x % num2 <= 18:
@@ -111,7 +111,7 @@ def check_pos(center_x,center_y):
                 if level[(center_y-num1) // num1][center_x // num2] < 3: #Checks up
                     turns[2] = True
             if 12 <= center_y % num1 <= 18:
-                if level[center_y // num1][(center_x+num3) // num2] < 3: #Checks right
+                if level[center_y // num1][(center_x-num3) // num2] < 3: #Checks right
                     turns[1] = True
                 if level[(center_y+num1) // num1][(center_x-num3) // num2] < 3: #Checks left
                     turns[0] = True
@@ -120,8 +120,7 @@ def check_pos(center_x,center_y):
         turns[1] = True
     return turns
 
-def move_player(player_x, player_y, direction):
-    speed = 2
+def move_player(player_x, player_y):
     if direction == 0 and valid_turns[0]:
         player_x += speed
     if direction == 1 and valid_turns[1]:
@@ -130,6 +129,7 @@ def move_player(player_x, player_y, direction):
         player_y -= speed
     if direction == 3 and valid_turns[3]:
         player_y += speed
+    return player_x, player_y
 
 #Gameloop
 run = True
@@ -148,11 +148,11 @@ while run:
     screen.fill('black')
     draw_board(level)
     draw_player()
-    center_x = int(player_x + 22.5)
-    center_y = int(player_y + 22.5)
+    center_x = int(player_x + 23)
+    center_y = int(player_y + 2)
     valid_turns = check_pos(center_x, center_y) #Returns a list
+    player_x, player_y = move_player(player_x, player_y)
     print(valid_turns)
-    #print(direction)
 
     for event in pg.event.get():
         if event.type == pg.QUIT:
@@ -161,35 +161,37 @@ while run:
             if event.key == pg.K_ESCAPE:
                 run = False
             elif event.key == pg.K_RIGHT:
-                temp.append('right')
+                temp = 0
             elif event.key == pg.K_LEFT:
-                temp.append('left')
+                temp = 1
             elif event.key == pg.K_UP:
-                temp.append('up')
+                temp = 2
             elif event.key == pg.K_DOWN:
-                temp.append('down')
+                temp = 3
+        elif event.type == pg.KEYUP:
+            if event.key == pg.K_RIGHT and temp == 0:
+                temp = direction
+            elif event.key == pg.K_LEFT and temp == 1:
+                temp = direction
+            elif event.key == pg.K_UP and temp == 2:
+                temp = direction
+            elif event.key == pg.K_DOWN and temp == 3:
+                temp = direction
 
-    if temp:
-        intended_move = temp[0]
-        direction_map = {'right':0, 'left':1, 'up':2, 'down':3}
-        move_index = direction_map.get(intended_move)
-        print(intended_move)
+    if temp == 0 and valid_turns[0]:
+        direction = 0
+    if temp == 1 and valid_turns[1]:
+        direction = 1
+    if temp == 2 and valid_turns[2]:
+        direction = 2
+    if temp == 3 and valid_turns[3]:
+        direction = 3
+    
 
-        if valid_turns[move_index]:
-            move_queue.clear()
-            direction = move_index
-            move_queue.append(intended_move)
-            temp.clear()
-        else:
-            temp.clear() #Move-queueing-function not made yet. This is a placeholder.
-
-    player_x, player_y = move_player(player_x, player_y, direction)
-
-    """    
-    if player_x > WIDTH and (HEIGHT//2-50) <= player_y <= (HEIGHT//2+50): #If player goes off screen, teleport to the other side.
+    if player_x > 900:  #If player goes off screen, teleport to the other side.
         player_x = -50
-    elif player_x < -50 and (HEIGHT//2-50) <= player_y <= (HEIGHT//2+50):
-        player_x = WIDTH
-    """
+    elif player_x < -50:
+        player_x = 900
+        
     pg.display.flip()
 pg.quit()
