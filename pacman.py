@@ -3,8 +3,6 @@ import pygame as pg
 from board import boards
 import math
 
-PI = math.pi
-
 ## Window setup
 pg.init()
 WIDTH = 900
@@ -14,10 +12,19 @@ timer = pg.time.Clock()
 fps = 60 #Sets an fps limit
 font = pg.font.Font('freesansbold.ttf',20)
 pg.display.set_caption("Pacman")
+
+## Game variables
 level = boards #Used if there are more levels with different boards (maps)
 color = 'blue' #Color of walls
 flicker = False #Used to flicker the power up dots
-valid_turns = [False, False, False, False] #Used to determine if a turn is valid (right, left, up, down)
+valid_turns = [False, False, False, False] #(right, left, up, down)
+temp = []
+move_queue = []
+direction = 0
+PI = math.pi
+player_x = 425
+player_y = 660
+counter = 0
 
 def draw_board(level):
     num1 = ((HEIGHT-50)//32) #Determines the height of each tile if 32 are on the horizontal line
@@ -35,7 +42,6 @@ def draw_board(level):
             if level[i][j] == 9: #Ghost exit wall
                 pg.draw.line(screen, 'white', (j * num2, i * num1 + (0.5 * num1)), (j * num2 + num2, i * num1 + (0.5*num1)), 3)
             if level[i][j] == 5: #Top right corner
-                #pg.draw.circle(screen, color,()
                 pg.draw.arc(screen, color,[(j * num2 - (0.5*num2)), (i * num1 + (0.5* num1)), num2, num1], 0, PI/2, 3)
             if level[i][j] == 6: #Top left corner
                 pg.draw.arc(screen, color,[(j * num2 + (0.5*num2)), (i * num1 + (0.5* num1)), num2, num1], PI/2, PI, 3)
@@ -49,10 +55,6 @@ for i in range(1,5):
     img = pg.image.load(f"assets/player_images/{i}.png")
     scaled = pg.transform.scale(img, (45,45))
     player_images.append(scaled)
-player_x = 425
-player_y = 660
-direction = 0
-counter = 0
 
 def draw_player():
     #Right = 0, Left = 1, Up = 2, Down = 3
@@ -65,18 +67,18 @@ def draw_player():
     elif direction == 3:
         screen.blit(pg.transform.rotate(player_images[counter // 5], -90), (player_x, player_y))
 
-
 def check_pos(center_x,center_y):
     turns = [False, False, False, False] #Left, right, up, down
-    num1 = ((HEIGHT-50)//32) #Determines the height of each tile if 32 are on the horizontal line
+    num1 = (HEIGHT-50)//32 #Determines the height of each tile if 32 are on the horizontal line
     num2 = (WIDTH//30) #Determines the width of each tile with 30 on the vertical line. // ensures integer is returned.
-    num3 = 15 
+    num3 = 15 #used to check a little ahead instead of a whole tile which can cause Pacman to stop too early
 
-    #Check collisions behind center of player (x,y) and the buffer of 15 pixels to compensate for the player's size and the empty space between walls and the tile's edge
+    #Check if it is possible to turn around 180 degrees from current direction
     if center_x // 30 < 29:
         if direction == 0:
             if level[center_y // num1][(center_x-num3) // num2] < 3: #Checks if 0, 1 or 2 is behind player when direction is right (empty, dot, power up)
                 turns[1] = True
+
         if direction == 1:
             if level[center_y // num1][(center_x+num3) // num2] < 3:
                 turns[0] = True
@@ -89,44 +91,45 @@ def check_pos(center_x,center_y):
             if level[(center_y+num3)// num1][center_x // num2] < 3:
                 turns[2] = True
 
+    #Check if it is possible to continue in the same direction and/or turn at any given position
         if direction == 2 or direction == 3:
-            if 12 <= center_x % num2 <= 18: #Determines if the center of the player is in the middle of a tile
-                if level[(center_y+num3)// num1][center_x // num2 + num3] < 3: #Determines if the tile below is 0,1 or 2.
+            if 12 <= center_x % num2 <= 18: #Determines if the center of the player is approx. in the middle of a tile
+                if level[(center_y+num3)// num1][center_x // num2] < 3: #Checks down
                     turns[3] = True
-                if level[(center_y-num3)// num1][center_x // num2 + num3] < 3: #Determines if the tile above is 0,1 or 2.
+                if level[(center_y-num3)// num1][center_x // num2] < 3: #Checks up
                     turns[2] = True
             if 12 <= center_y % num1 <= 18:
                 if level[center_y // num1][(center_x-num2) // num2] < 3: #Checks left side
                     turns[0] = True
-                if level[center_y // num1][(center_x+num2) // num2] < 3: #Checks right side ##Check if num2 can be replaced by num3 and num1 in up/down checks
+                if level[center_y // num1][(center_x+num2) // num2] < 3: #Checks right side
                     turns[1] = True
 
         if direction == 0 or direction == 1:
             if 12 <= center_x % num2 <= 18:
-                if level[center_y // num1][(center_x-num3) // num2] < 3: #Checks left side
-                    turns[0] = True
-                if level[center_y // num1][(center_x+num3) // num2] < 3: #Checks right side
-                    turns[1] = True
-            if 12 <= center_y % num1 <= 18:
-                if level[(center_y-num1) // num1][center_x // num2] < 3: #Checks up
-                    turns[2] = True
                 if level[(center_y+num1) // num1][center_x // num2] < 3: #Checks down
                     turns[3] = True
+                if level[(center_y-num1) // num1][center_x // num2] < 3: #Checks up
+                    turns[2] = True
+            if 12 <= center_y % num1 <= 18:
+                if level[center_y // num1][(center_x+num3) // num2] < 3: #Checks right
+                    turns[1] = True
+                if level[(center_y+num1) // num1][(center_x-num3) // num2] < 3: #Checks left
+                    turns[0] = True
     else:
         turns[0] = True
         turns[1] = True
     return turns
 
-
-ghosts = []
-def draw_ghosts():
-    for i in range(1,4):
-        img = pg.image.load(f"assets/ghost_images/{i}.png")
-        ghosts.append(img)
-
-move_queue = ['start']
-#If keypress in direction x is possible, clear the queue and append the move to the queue. While the queue is not empty, move the player in the direction of the queue.
-#If the direction is not possible, append the move to the queue and wait until the player can move in that direction.
+def move_player(player_x, player_y, direction):
+    speed = 2
+    if direction == 0 and valid_turns[0]:
+        player_x += speed
+    if direction == 1 and valid_turns[1]:
+        player_x -= speed
+    if direction == 2 and valid_turns[2]:
+        player_y -= speed
+    if direction == 3 and valid_turns[3]:
+        player_y += speed
 
 #Gameloop
 run = True
@@ -147,8 +150,9 @@ while run:
     draw_player()
     center_x = int(player_x + 22.5)
     center_y = int(player_y + 22.5)
-    # TEST # print(f"Center x: {center_x} and center y: {center_y}")
-    valid_turns = check_pos(center_x, center_y)
+    valid_turns = check_pos(center_x, center_y) #Returns a list
+    print(valid_turns)
+    #print(direction)
 
     for event in pg.event.get():
         if event.type == pg.QUIT:
@@ -157,35 +161,35 @@ while run:
             if event.key == pg.K_ESCAPE:
                 run = False
             elif event.key == pg.K_RIGHT:
-                #if valid_turns[0]:
-                move_queue.append('right')
-                move_queue.pop(0)
-                #else move_queue.append('right')
+                temp.append('right')
             elif event.key == pg.K_LEFT:
-                move_queue.append('left')
-                move_queue.pop(0)
+                temp.append('left')
             elif event.key == pg.K_UP:
-                move_queue.append('up')
-                move_queue.pop(0)
+                temp.append('up')
             elif event.key == pg.K_DOWN:
-                move_queue.append('down')
-                move_queue.pop(0)
+                temp.append('down')
 
-    if move_queue[0] == 'start':
-        pass
-    elif move_queue[0] == 'right': #and is not blocked by wall: #(god pseudokode)
-        player_x += 1.5
-        direction = 0
-    elif move_queue[0] == 'left': #and is not blocked by wall:
-        player_x -= 1.5
-        direction = 1
-    elif move_queue[0] == 'up': #and is not blocked by wall:
-        player_y -= 1.5
-        direction = 2
-    elif move_queue[0] == 'down': #and is not blocked by wall:
-        player_y += 1.5
-        direction = 3
-    
-        
+    if temp:
+        intended_move = temp[0]
+        direction_map = {'right':0, 'left':1, 'up':2, 'down':3}
+        move_index = direction_map.get(intended_move)
+        print(intended_move)
+
+        if valid_turns[move_index]:
+            move_queue.clear()
+            direction = move_index
+            move_queue.append(intended_move)
+            temp.clear()
+        else:
+            temp.clear() #Move-queueing-function not made yet. This is a placeholder.
+
+    player_x, player_y = move_player(player_x, player_y, direction)
+
+    """    
+    if player_x > WIDTH and (HEIGHT//2-50) <= player_y <= (HEIGHT//2+50): #If player goes off screen, teleport to the other side.
+        player_x = -50
+    elif player_x < -50 and (HEIGHT//2-50) <= player_y <= (HEIGHT//2+50):
+        player_x = WIDTH
+    """
     pg.display.flip()
 pg.quit()
