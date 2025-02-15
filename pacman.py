@@ -9,7 +9,7 @@ WIDTH = 900
 HEIGHT = 950
 screen = pg.display.set_mode((WIDTH,HEIGHT))
 timer = pg.time.Clock()
-fps = 60 #Sets an fps limit
+fps = 60
 font = pg.font.Font('freesansbold.ttf',20)
 pg.display.set_caption("Pacman")
 
@@ -22,7 +22,7 @@ temp = 0
 direction = 0
 PI = math.pi
 player_x = 425
-player_y = 660
+player_y = 665
 counter = 0
 speed = 2
 
@@ -78,15 +78,12 @@ def check_pos(center_x,center_y):
         if direction == 0:
             if level[center_y // num1][(center_x-num3) // num2] < 3: #Checks if 0, 1 or 2 is behind player when direction is right (empty, dot, power up)
                 turns[1] = True
-
         if direction == 1:
             if level[center_y // num1][(center_x+num3) // num2] < 3:
                 turns[0] = True
-
         if direction == 2:
             if level[(center_y+num3) // num1][center_x // num2] < 3:
                 turns[3] = True
-
         if direction == 3:
             if level[(center_y-num3)// num1][center_x // num2] < 3:
                 turns[2] = True
@@ -111,10 +108,10 @@ def check_pos(center_x,center_y):
                 if level[(center_y-num1) // num1][center_x // num2] < 3: #Checks up
                     turns[2] = True
             if 12 <= center_y % num1 <= 18:
-                if level[center_y // num1][(center_x-num3) // num2] < 3: #Checks right
-                    turns[1] = True
-                if level[(center_y+num1) // num1][(center_x-num3) // num2] < 3: #Checks left
+                if level[center_y // num1][(center_x+num3) // num2] < 3: #Checks right
                     turns[0] = True
+                if level[center_y // num1][(center_x-num3) // num2] < 3: #Checks left
+                    turns[1] = True
     else:
         turns[0] = True
         turns[1] = True
@@ -133,8 +130,6 @@ def move_player(player_x, player_y):
 
 #Gameloop
 run = True
-num1 = ((HEIGHT-50)//32)
-num2 = (WIDTH//30)
 while run:
     timer.tick(fps)
     if counter < 19: #Can't exceed 19 since there are only 4 images (index 0-3). 20 would return index 4 which doesn't exist.
@@ -149,7 +144,7 @@ while run:
     draw_board(level)
     draw_player()
     center_x = int(player_x + 23)
-    center_y = int(player_y + 2)
+    center_y = int(player_y + 23)
     valid_turns = check_pos(center_x, center_y) #Returns a list
     player_x, player_y = move_player(player_x, player_y)
     print(valid_turns)
@@ -187,7 +182,6 @@ while run:
     if temp == 3 and valid_turns[3]:
         direction = 3
     
-
     if player_x > 900:  #If player goes off screen, teleport to the other side.
         player_x = -50
     elif player_x < -50:
