@@ -10,8 +10,8 @@ HEIGHT = 950
 screen = pg.display.set_mode((WIDTH,HEIGHT))
 timer = pg.time.Clock()
 fps = 60
-font = pg.font.Font('freesansbold.ttf',20)
 pg.display.set_caption("Pacman")
+score_font = pg.font.Font('assets/fonts/BalAstaral-2Ox7o.ttf', 32)
 
 ## Game variables
 level = boards #Used if there are more levels with different boards (maps)
@@ -22,9 +22,10 @@ temp = 0
 direction = 0
 PI = math.pi
 player_x = 425
-player_y = 665
+player_y = 661
 counter = 0
 speed = 2
+score = 0
 
 def draw_board(level):
     num1 = ((HEIGHT-50)//32) #Determines the height of each tile if 32 are on the horizontal line
@@ -128,6 +129,19 @@ def move_player(player_x, player_y):
         player_y += speed
     return player_x, player_y
 
+def check_point(score):
+    num1 = (HEIGHT-50)//32
+    num2 = (WIDTH//30)
+    if 0 < player_x < 870: #If player is within the screen. Can't check a tile outside the screen.
+        if level[center_y // num1][center_x // num2] == 1: #Normal dot
+            level[center_y // num1][center_x // num2] = 0
+            score += 10
+        elif level[center_y // num1][center_x // num2] == 2: #Power up
+            level[center_y // num1][center_x // num2] = 0
+            score += 50
+            print("Power up")
+    return score
+
 #Gameloop
 run = True
 while run:
@@ -147,7 +161,7 @@ while run:
     center_y = int(player_y + 23)
     valid_turns = check_pos(center_x, center_y) #Returns a list
     player_x, player_y = move_player(player_x, player_y)
-    print(valid_turns)
+    score = check_point(score)
 
     for event in pg.event.get():
         if event.type == pg.QUIT:
@@ -186,6 +200,8 @@ while run:
         player_x = -50
     elif player_x < -50:
         player_x = 900
+    score_text = score_font.render(f"Score: {score}", True, 'white')
+    screen.blit(score_text, (10, 10))
         
     pg.display.flip()
 pg.quit()
