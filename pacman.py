@@ -32,6 +32,7 @@ eaten_ghosts = [False, False, False, False]
 start_count = 0 #Used to delay the start of the game
 moving = False
 hp = 3
+player_dead = False
 
 ##Load player and ghost images
 player_images = []
@@ -42,7 +43,7 @@ for i in range(1,5):
 
 blinky = pg.image.load("assets/ghost_images/red.png")
 blinky_scaled = pg.transform.scale(blinky, (45,45))
-blink_spawnx = (WIDTH//30)*15-25
+blinky_spawnx = (WIDTH//30)*15-25
 blinky_spawny = (HEIGHT-50)//32*13-35
 blinky_direction = 0
 eaten_ghost = [False, False, False, False] #Blinky, Pinky, Inky, Clyde
@@ -81,53 +82,64 @@ class Ghost:
         ghost_rect = pg.rect.Rect((self.center_x-18, self.center_y - 18), (36,36)) #Defining a hitbox rectangle around the ghost to detect collision
         return ghost_rect
 
-    def check_col(self):
+    def check_col(self): #Similar to check_pos but for the ghosts
         num1 = ((HEIGHT-50)//32)
         num2 = (WIDTH//30)
         num3 = 15
         self.turns = [False, False, False, False] #right, left, up, down
         self.box = True
         if self.center_x // 30 < 29:
-            if self.direction == 0:
-                if level[self.center_y // num1][(self.center_x-num3) // num2] < 3: #Checks if 0, 1 or 2 is behind player when direction is right (empty, dot, power up)
-                    self.turns[1] = True
-            if self.direction == 1:
-                if level[self.center_y // num1][(self.center_x+num3) // num2] < 3:
+            if level[self.center_y // num1][(self.center_x+num3) // num2] < 3 \
+                or (level[self.center_y // num1][(self.center_x+num3) // num2] == 9 and (self.box or self.dead)): #Checks if there is a ghost wall
                     self.turns[0] = True
-            if self.direction == 2:
-                if level[(self.center_y+num3) // num1][self.center_x // num2] < 3:
-                    self.turns[3] = True
-            if self.direction == 3:
-                if level[(self.center_y-num3)// num1][self.center_x // num2] < 3:
+            if level[self.center_y // num1][(self.center_x-num3) // num2] < 3 \
+                or (level[self.center_y // num1][(self.center_x-num3) // num2] == 9 and (self.box or self.dead)):
+                    self.turns[1] = True
+            if level[(self.center_y+num3) // num1][self.center_x // num2] < 3 \
+                or (level[(self.center_y+num3) // num1][self.center_x // num2] == 9 and (self.box or self.dead)):
                     self.turns[2] = True
+            if level[(self.center_y-num3) // num1][(self.center_x-num3) // num2] < 3 \
+                or (level[(self.center_y-num3) // num1][self.center_x // num2] == 9 and (self.box or self.dead)):
+                    self.turns[3] = True
 
-        #Check if it is possible to continue in the same direction and/or turn at any given position
             if self.direction == 2 or self.direction == 3:
-                if 12 <= self.center_x % num2 <= 18: #Determines if the center of the player is approx. in the middle of a tile
-                    if level[(center_y+num3)// num1][center_x // num2] < 3: #Checks down
+                if 12 <= self.center_x % num1 <= 18:
+                    if level[(center_y+num3)// num1][center_x // num2] < 3 \
+                    or (level[(center_y+num3)// num1][center_x // num2] == 9 and self.box or self.dead): #Checks down and ghost wall
                         self.turns[3] = True
-                    if level[(self.center_y-num3)// num1][self.center_x // num2] < 3: #Checks up
+                    if level[(self.center_y-num3)// num1][self.center_x // num2] < 3 \
+                        or(level[(self.center_y-num3)// num1][self.center_x // num2] == 9 and self.box or self.dead): #Checks up
                         self.turns[2] = True
                 if 12 <= self.center_y % num1 <= 18:
-                    if level[self.center_y // num1][(self.center_x-num2) // num2] < 3: #Checks left side
+                    if level[self.center_y // num1][(self.center_x-num2) // num2] < 3 \
+                        or (level[self.center_y// num1][(self.center_x-num2) // num2] == 9 and self.box or self.dead): #Checks left side
                         self.turns[1] = True
-                    if level[self.center_y // num1][(self.center_x+num2) // num2] < 3: #Checks right side
+                    if level[self.center_y // num1][(self.center_x+num2) // num2] < 3 \
+                        or (level[self.center_y// num1][(self.center_x+num2) // num2] == 9 and self.box or self.dead): #Checks right side
                         self.turns[0] = True
 
             if self.direction == 0 or self.direction == 1:
                 if 12 <= self.center_x % num2 <= 18:
-                    if level[(self.center_y+num1) // num1][self.center_x // num2] < 3: #Checks down
+                    if level[(self.center_y+num1) // num1][self.center_x // num2] < 3 \
+                        or (level[(self.center_y+num1)// num1][self.center_x // num2] == 9 and self.box or self.dead): #Checks down
                         self.turns[3] = True
-                    if level[(self.center_y-num1) // num1][self.center_x // num2] < 3: #Checks up
+                    if level[(self.center_y-num1) // num1][self.center_x // num2] < 3 \
+                        or (level[(self.center_y-num1)// num1][self.center_x // num2] == 9 and self.box or self.dead): #Checks up
                         self.turns[2] = True
                 if 12 <= self.center_y % num1 <= 18:
-                    if level[self.center_y // num1][(self.center_x+num3) // num2] < 3: #Checks right
+                    if level[self.center_y // num1][(self.center_x+num3) // num2] < 3 \
+                        or (level[self.center_y// num1][(self.center_x+num3) // num2] == 9 and self.box or self.dead): #Checks right
                         self.turns[0] = True
-                    if level[self.center_y // num1][(self.center_x-num3) // num2] < 3: #Checks left
+                    if level[self.center_y // num1][(self.center_x-num3) // num2] < 3 \
+                        or (level[self.center_y// num1][(self.center_x-num3) // num2] == 9 and self.box or self.dead): #Checks left
                         self.turns[1] = True
         else:
             self.turns[0] = True
             self.turns[1] = True
+        if 350 < self.x < 550 and 370 < self.y < 490: #Approximate box area
+            self.box = True
+        else: self.box = False
+        
         return self.turns, self.box
     
 
@@ -245,7 +257,6 @@ def check_point(score, powerup, power_counter, eaten_ghosts):
 
 ## Gameloop
 run = True
-
 while run:
     timer.tick(fps)
     if counter < 19: #Can't exceed 19 since there are only 4 images (index 0-3). 20 would return index 4 which doesn't exist.
@@ -263,7 +274,7 @@ while run:
         powerup = False
         power_counter = 0
         eaten_ghosts = [False, False, False, False]
-    if start_count < 180:
+    if start_count < 180 and not player_dead:
         start_count += 1
         moving = False
     elif start_count >= 180:
@@ -273,7 +284,7 @@ while run:
     screen.fill('black')
     draw_board(level)
     draw_player()
-    blinky = Ghost(blink_spawnx, blinky_spawny, target[0], ghost_speed, blinky_scaled, blinky_direction, blinky_dead, blinky_box, 0)
+    blinky = Ghost(blinky_spawnx, blinky_spawny, target[0], ghost_speed, blinky_scaled, blinky_direction, blinky_dead, blinky_box, 0)
     blinky.draw()
     center_x = int(player_x + 23)
     center_y = int(player_y + 23)
@@ -325,6 +336,20 @@ while run:
     screen.blit(score_text, (10, 10))
     hp_text = score_font.render(f"HP: {hp}", True, 'white')
     screen.blit(hp_text, (10, 40))
+
+    if player_x == blinky_spawnx and player_y == blinky_spawny and not powerup:
+        hp -= 1
+        player_x = 425
+        player_y = 661
+        direction = 0
+        temp = 0
+        print("You died")
+    if hp == 0:
+        end_text = score_font.render("Game Over", True, 'white')
+        screen.blit(end_text, (WIDTH//2 - 100, HEIGHT//2))
+        moving = False
+        start_count = 0
+        player_dead = True
         
     pg.display.flip()
 pg.quit()
