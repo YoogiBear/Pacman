@@ -27,8 +27,7 @@ counter = 0
 power_counter = 0
 player_speed = 3
 score = 0
-move_queue = []
-temp = ['right']
+move_queue = [0]
 powerup = False
 eaten_ghosts = [False, False, False, False]
 start_count = 0 #Used to delay the start of the game
@@ -394,39 +393,20 @@ while run:
             if event.key == pg.K_ESCAPE:
                 run = False
             elif event.key == pg.K_RIGHT:
-                temp.append('right')
+                move_queue.append(0)
             elif event.key == pg.K_LEFT:
-                temp.append('left')
+                move_queue.append(1)
             elif event.key == pg.K_UP:
-                temp.append('up')
+                move_queue.append(2)
             elif event.key == pg.K_DOWN:
-                temp.append('down')
+                move_queue.append(3)
 
     if moving:
-        if temp: #Determines if a key was pressed and added a move to the temporary list
-            intended_move = temp[-1]
-            direction_map = {'right':0, 'left':1, 'up':2, 'down':3}
-            move_index = direction_map.get(intended_move)
-
-            if valid_turns[move_index]: #If the intended move is valid, execute immediately.
+        if move_queue: # Move queue
+            intended_move = move_queue[-1]
+            if valid_turns[intended_move]:
+                direction = intended_move
                 move_queue.clear()
-                direction = move_index
-                move_queue.append(intended_move)
-                temp.clear()
-            else: #Otherwise, add to queue and remove any other queued move.
-                if len(move_queue) > 1:
-                    move_queue.pop(1)
-                move_queue.append(intended_move) #Can only append one move. Makes sure only two moves can be in move_queue at the same time.
-
-        if move_queue:
-            if not valid_turns[move_index]: #If the queued move isn't available, do nothing and continue in the same direction.
-                pass
-            elif valid_turns[move_index]: #If the first move in queue is invalid, but the second isn't, change direction
-                move_queue.pop(0)
-                direction = move_index
-                move_queue.append(intended_move)
-                temp.clear()
-                
         player_x, player_y = move_player(player_x, player_y)
         score, powerup, power_counter, eaten_ghosts = check_point(score, powerup, power_counter, eaten_ghosts)
         if not blinky_dead and not blinky.box:
