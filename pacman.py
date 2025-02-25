@@ -25,8 +25,10 @@ player_x = 425
 player_y = 661
 counter = 0
 power_counter = 0
-player_speed = 2
+player_speed = 3
 score = 0
+move_queue = []
+temp = ['right']
 powerup = False
 eaten_ghosts = [False, False, False, False]
 start_count = 0 #Used to delay the start of the game
@@ -47,7 +49,7 @@ blinky_spawnx = (WIDTH//30)*15-25
 blinky_spawny = (HEIGHT-50)//32*13-35
 blinky_direction = 0
 eaten_ghost = [False, False, False, False] #Blinky, Pinky, Inky, Clyde
-ghost_speed = player_speed - 0.25
+ghost_speed = player_speed
 target = [(player_x, player_y), (player_x, player_y), (player_x, player_y), (player_x, player_y)] #Will eventually be the box if they die.
 blinky_dead = False
 blinky_box = False #If Blinky is in the box
@@ -141,8 +143,103 @@ class Ghost:
         else: self.box = False
         
         return self.turns, self.box
-    
 
+    def check_pos(self): 
+        #Blinky calculates the shortest path to the player and chase for 10 seconds.
+        #It will then switch to scatter mode for 5 seconds and repeat. (Top right corner)
+        #Ghosts can't turn 180 degrees.
+        num1 = ((HEIGHT-50)//32)
+        num2 = (WIDTH//30)
+        target_x, target_y = self.target
+        turns = []
+        if not self.dead or self.box:
+            if direction == 0: #Right, can't go left
+                if self.turns[0]:
+                    dist1 = (((self.center_x+num2) - target_x)**2 + (self.center_y - target_y)**2)**0.5
+                    turns.append(dist1)
+                elif self.turns[2]:
+                    dist2 = (((self.center_x) - target_x)**2 + ((self.center_y + num1)-target_y)**2)**0.5
+                    turns.append(dist2)
+                elif self.turns[3]:
+                    dist3 = (((self.center_x) - target_x)**2 + ((self.center_y - num1)-target_y)**2)**0.5
+                    turns.append(dist3)
+                shortest = min(turns)
+                if shortest == dist1:
+                    self.direction = 0
+                elif shortest == dist2:
+                    self.direction = 2
+                elif shortest == dist3:
+                    self.direction = 3
+                return self.direction
+            
+            elif direction == 1: #Left, can't go right
+                if self.turns[1]:
+                    dist1 = (((self.center_x-num2) - target_x)**2 + (self.center_y - target_y)**2)**0.5
+                    turns.append(dist1)
+                elif self.turns[2]:
+                    dist2 = (((self.center_x) - target_x)**2 + ((self.center_y + num1)-target_y)**2)**0.5
+                    turns.append(dist2)
+                elif self.turns[3]:
+                    dist3 = (((self.center_x) - target_x)**2 + ((self.center_y - num1)-target_y)**2)**0.5
+                    turns.append(dist3)
+                shortest = min(turns)
+                if shortest == dist1:
+                    self.direction = 1
+                elif shortest == dist2:
+                    self.direction = 2
+                elif shortest == dist3:
+                    self.direction = 3
+                return self.direction
+
+            elif direction == 2: #Up, can't go down
+                if self.turns[0]:
+                    dist1 = (((self.center_x+num2) - target_x)**2 + (self.center_y - target_y)**2)**0.5
+                    turns.append(dist1)
+                elif self.turns[1]:
+                    dist2 = (((self.center_x-num2) - target_x)**2 + (self.center_y - target_y)**2)**0.5
+                    turns.append(dist2)
+                elif self.turns[2]:
+                    dist3 = (((self.center_x) - target_x)**2 + ((self.center_y + num1)-target_y)**2)**0.5
+                    turns.append(dist3)
+                shortest = min(turns)                
+                if shortest == dist1:
+                    self.direction = 0
+                elif shortest == dist2:
+                    self.direction = 1
+                elif shortest == dist3:
+                    self.direction = 2
+                return self.direction
+            
+            elif direction == 3: #Down, can't go up
+                if self.turns[0]:
+                    dist1 = (((self.center_x+num2) - target_x)**2 + (self.center_y - target_y)**2)**0.5
+                    turns.append(dist1)
+                elif self.turns[1]:
+                    dist2 = (((self.center_x-num2) - target_x)**2 + (self.center_y - target_y)**2)**0.5
+                    turns.append(dist2)
+                elif self.turns[3]:
+                    dist3 = (((self.center_x) - target_x)**2 + ((self.center_y - num1)-target_y)**2)**0.5
+                    turns.append(dist3)
+                shortest = min(turns)                
+                if shortest == dist1:
+                    self.direction = 0
+                elif shortest == dist2:
+                    self.direction = 1
+                elif shortest == dist3:
+                    self.direction = 3
+                return self.direction
+        return self.direction
+
+    def move_blinky(self):
+        if self.direction == 0:
+            self.x += self.speed
+        if self.direction == 1:
+            self.x -= self.speed
+        if self.direction == 2:
+            self.y -= self.speed
+        if self.direction == 3:
+            self.y += self.speed
+        return self.x, self.y
 ## Draw and logic functions
 def draw_board(level):
     num1 = ((HEIGHT-50)//32) #Determines the height of each tile if 32 are on the horizontal line
@@ -280,7 +377,6 @@ while run:
     elif start_count >= 180:
         moving = True
 
-
     screen.fill('black')
     draw_board(level)
     draw_player()
@@ -289,11 +385,8 @@ while run:
     center_x = int(player_x + 23)
     center_y = int(player_y + 23)
     valid_turns = check_pos(center_x, center_y) #Returns a list
-    if moving:
-        player_x, player_y = move_player(player_x, player_y)
-    score, powerup, power_counter, eaten_ghost = check_point(score, powerup, power_counter, eaten_ghosts)
 
-
+    ##Input control
     for event in pg.event.get():
         if event.type == pg.QUIT:
             run = False
@@ -301,32 +394,47 @@ while run:
             if event.key == pg.K_ESCAPE:
                 run = False
             elif event.key == pg.K_RIGHT:
-                temp = 0
+                temp.append('right')
             elif event.key == pg.K_LEFT:
-                temp = 1
+                temp.append('left')
             elif event.key == pg.K_UP:
-                temp = 2
+                temp.append('up')
             elif event.key == pg.K_DOWN:
-                temp = 3
-        elif event.type == pg.KEYUP:
-            if event.key == pg.K_RIGHT and temp == 0:
-                temp = direction
-            elif event.key == pg.K_LEFT and temp == 1:
-                temp = direction
-            elif event.key == pg.K_UP and temp == 2:
-                temp = direction
-            elif event.key == pg.K_DOWN and temp == 3:
-                temp = direction
+                temp.append('down')
 
-    if temp == 0 and valid_turns[0]:
-        direction = 0
-    if temp == 1 and valid_turns[1]:
-        direction = 1
-    if temp == 2 and valid_turns[2]:
-        direction = 2
-    if temp == 3 and valid_turns[3]:
-        direction = 3
-    
+    if moving:
+        if temp: #Determines if a key was pressed and added a move to the temporary list
+            intended_move = temp[-1]
+            direction_map = {'right':0, 'left':1, 'up':2, 'down':3}
+            move_index = direction_map.get(intended_move)
+
+            if valid_turns[move_index]: #If the intended move is valid, execute immediately.
+                move_queue.clear()
+                direction = move_index
+                move_queue.append(intended_move)
+                temp.clear()
+            else: #Otherwise, add to queue and remove any other queued move.
+                if len(move_queue) > 1:
+                    move_queue.pop(1)
+                move_queue.append(intended_move) #Can only append one move. Makes sure only two moves can be in move_queue at the same time.
+
+        if move_queue:
+            if not valid_turns[move_index]: #If the queued move isn't available, do nothing and continue in the same direction.
+                pass
+            elif valid_turns[move_index]: #If the first move in queue is invalid, but the second isn't, change direction
+                move_queue.pop(0)
+                direction = move_index
+                move_queue.append(intended_move)
+                temp.clear()
+                
+        player_x, player_y = move_player(player_x, player_y)
+        score, powerup, power_counter, eaten_ghosts = check_point(score, powerup, power_counter, eaten_ghosts)
+        if not blinky_dead and not blinky.box:
+            blinky_direction, blinky_box = blinky.check_col()
+            #print(blinky_direction)
+            blinky.x, blinky.y = blinky.move_blinky()
+    score, powerup, power_counter, eaten_ghost = check_point(score, powerup, power_counter, eaten_ghosts)
+
     #If player goes off screen, teleport to the other side.
     if player_x > WIDTH:
         player_x = -50
@@ -340,7 +448,7 @@ while run:
     if player_x == blinky_spawnx and player_y == blinky_spawny and not powerup:
         hp -= 1
         player_x = 425
-        player_y = 661
+        player_y = 665
         direction = 0
         temp = 0
         print("You died")

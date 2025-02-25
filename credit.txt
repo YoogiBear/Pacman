@@ -3,3 +3,4 @@ Pacman Wakka-Wakka sound: https://www.youtube.com/watch?v=Kwf6_Btok1o
 Other sound effects: https://www.youtube.com/watch?v=SPjEhbRFTUk
 Pacman tutorial and pictures / GITHUB: https://youtu.be/9H27CimgPsQ?feature=shared / https://github.com/plemaster01/PythonPacman
 Blinky start position: https://pacmancode.com/start-positions#:~:text=Blinky%20starts%20directly%20above%20the,the%20ghost%20spawn%20node%20is
+Ghost algorithms: https://www.youtube.com/watch?v=ataGotQ7ir8&list=PL-2wJ_sY3NM5J9WNYfufiZ7qzKlfnIikI&index=29
