@@ -27,13 +27,14 @@ counter = 0
 power_counter = 0
 player_speed = 3
 score = 0
-move_queue = [0]
+move_queue = []
 powerup = False
 eaten_ghosts = [False, False, False, False]
 start_count = 0 #Used to delay the start of the game
 moving = False
 hp = 3
 player_dead = False
+player_won = False
 
 ##Load player and ghost images
 player_images = []
@@ -41,6 +42,9 @@ for i in range(1,5):
     img = pg.image.load(f"assets/player_images/{i}.png")
     scaled = pg.transform.scale(img, (45,45))
     player_images.append(scaled)
+powerup_sound = pg.mixer.Sound("assets/sounds/Ghost_scared.mp3")
+start_sound = pg.mixer.Sound("assets/sounds/Startup.mp3")
+wakka_sound = pg.mixer.Sound("assets/sounds/Wakka.mp3")
 
 blinky = pg.image.load("assets/ghost_images/red.png")
 blinky_scaled = pg.transform.scale(blinky, (45,45))
@@ -56,6 +60,7 @@ spooked = pg.image.load("assets/ghost_images/powerup.png")
 spooked_img = pg.transform.scale(spooked, (45,45))
 eyes = pg.image.load("assets/ghost_images/dead.png")
 eyes_img = pg.transform.scale(eyes, (45,45))
+won = 0
 
 class Ghost:
     def __init__(self, x, y, target, speed, img, direction, dead, box, id):
@@ -343,22 +348,31 @@ def check_point(score, powerup, power_counter, eaten_ghosts):
         if level[center_y // num1][center_x // num2] == 1: #Normal dot
             level[center_y // num1][center_x // num2] = 0
             score += 10
+            if moving:
+                wakka_sound.play()
         elif level[center_y // num1][center_x // num2] == 2: #Power up
             level[center_y // num1][center_x // num2] = 0
             score += 50
+            if powerup:
+                powerup_sound.stop()
+                powerup_sound.play()
+            else: powerup_sound.play()
             powerup = True
             power_counter = 0 #Reset counter if you already had a powerup
             eaten_ghosts = [False, False, False, False] #The same ghost can't be eaten twice during the same powerup
+            powerup_sound.play()
+
     return score, powerup, power_counter, eaten_ghosts
 
 ## Gameloop
 run = True
+start_sound.play()
+
 while run:
     timer.tick(fps)
     if counter < 19: #Can't exceed 19 since there are only 4 images (index 0-3). 20 would return index 4 which doesn't exist.
         counter += 1
         if counter > 15:
-            pass
             flicker = False
     else:
         counter = 0
@@ -370,7 +384,7 @@ while run:
         powerup = False
         power_counter = 0
         eaten_ghosts = [False, False, False, False]
-    if start_count < 180 and not player_dead:
+    if start_count < 280 and not player_dead or player_won:
         start_count += 1
         moving = False
     elif start_count >= 180:
@@ -402,7 +416,7 @@ while run:
                 move_queue.append(3)
 
     if moving:
-        if move_queue: # Move queue
+        if move_queue:
             intended_move = move_queue[-1]
             if valid_turns[intended_move]:
                 direction = intended_move
@@ -438,6 +452,12 @@ while run:
         moving = False
         start_count = 0
         player_dead = True
-        
+
+    if score == 2620: #Maximum score
+        win_text = score_font.render("You won!", True, 'white')
+        screen.blit(win_text, (WIDTH//2 - 100, HEIGHT//2))
+        start_count = 0
+        moving = False
+        player_won = True
     pg.display.flip()
 pg.quit()
